@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NMT Format — Tenses Task</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+  :root{
+    --bg:#0d1117;--surface:#161b22;--surface2:#1c2333;--border:#30363d;
+    --accent:#58a6ff;--accent2:#f78166;--accent3:#3fb950;--accent4:#d2a8ff;
+    --warn:#e3b341;--text:#e6edf3;--muted:#7d8590;
+    --correct-bg:#0f2d14;--wrong-bg:#2d0f0f;--r:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0;}
+
+  /* HEADER */
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .header-left h1{font-size:1rem;font-weight:800;color:var(--text);}
+  .header-left p{font-size:.73rem;color:var(--muted);margin-top:3px;}
+  .timer-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 16px;display:flex;align-items:center;gap:10px;}
+  .timer-label{font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+  .timer-val{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--warn);min-width:50px;}
+  .timer-btn{background:var(--accent);color:#000;border:none;border-radius:5px;padding:5px 12px;font-size:.72rem;font-weight:700;font-family:'Sora',sans-serif;cursor:pointer;}
+  .timer-btn:hover{opacity:.85;}
+  .timer-btn.red{background:var(--accent2);}
+
+  /* TABS */
+  .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);}
+  .tab{flex:1;padding:12px 8px;font-size:.74rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;text-align:center;transition:all .2s;white-space:nowrap;}
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+  /* MAIN */
+  .main{max-width:820px;margin:0 auto;padding:22px 18px;}
+
+  /* EXAM PAPER STYLE */
+  .exam-header{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:14px;}
+  .exam-badge{background:var(--accent);color:#000;font-size:.65rem;font-weight:800;padding:4px 10px;border-radius:5px;white-space:nowrap;letter-spacing:.5px;text-transform:uppercase;margin-top:2px;flex-shrink:0;}
+  .exam-badge.b{background:var(--accent4);}.exam-badge.c{background:var(--accent3);}
+  .exam-title{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:4px;}
+  .exam-instr{font-size:.79rem;color:var(--muted);line-height:1.5;}
+
+  /* READING TEXT */
+  .text-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:16px;line-height:1.9;font-size:.88rem;color:var(--text);}
+  .text-block .text-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;}
+  .gap-num{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:0 8px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--accent4);font-weight:600;margin:0 2px;}
+
+  /* QUESTIONS */
+  .q-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;}
+  .q-num{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .q-text{font-size:.87rem;font-weight:600;color:var(--text);margin-bottom:10px;line-height:1.5;}
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  @media(max-width:480px){.options{grid-template-columns:1fr;}}
+  .opt{background:var(--surface2);border:1.5px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-size:.82rem;font-family:'Sora',sans-serif;cursor:pointer;transition:all .15s;font-weight:500;text-align:left;display:flex;align-items:center;gap:8px;}
+  .opt:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+  .opt .letter{background:var(--surface);border:1px solid var(--border);border-radius:4px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;font-family:'JetBrains Mono',monospace;color:var(--muted);}
+  .opt.selected{border-color:var(--accent4);background:#1e1a2e;color:var(--accent4);}
+  .opt.selected .letter{background:var(--accent4);color:#000;border-color:var(--accent4);}
+  .opt.correct{border-color:var(--accent3);background:var(--correct-bg);color:var(--accent3);}
+  .opt.correct .letter{background:var(--accent3);color:#000;border-color:var(--accent3);}
+  .opt.wrong{border-color:var(--accent2);background:var(--wrong-bg);color:var(--accent2);}
+  .opt.wrong .letter{background:var(--accent2);color:#000;border-color:var(--accent2);}
+  .opt:disabled{cursor:default;}
+
+  .q-feedback{margin-top:10px;font-size:.78rem;line-height:1.5;display:none;padding:9px 12px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);}
+  .q-feedback.show{display:block;}
+  .q-feedback .rule{color:var(--warn);}
+
+  /* SECTION B — OPEN CLOZE */
+  .cloze-text{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:16px;line-height:2.1;font-size:.88rem;}
+  .cloze-input{display:inline-block;border:none;border-bottom:2px solid var(--accent4);background:transparent;color:var(--accent4);font-family:'JetBrains Mono',monospace;font-size:.84rem;font-weight:600;width:130px;outline:none;text-align:center;padding:0 4px;transition:border-color .15s;vertical-align:baseline;}
+  .cloze-input:focus{border-bottom-color:var(--accent);}
+  .cloze-input.ok{border-bottom-color:var(--accent3);color:var(--accent3);}
+  .cloze-input.no{border-bottom-color:var(--accent2);color:var(--accent2);}
+  .cloze-num{font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--muted);vertical-align:super;margin-right:2px;}
+  .cloze-reveal{font-size:.75rem;color:var(--muted);display:none;margin-top:2px;}
+  .cloze-reveal.show{display:inline;}
+  .cloze-reveal .ans{color:var(--accent3);font-family:'JetBrains Mono',monospace;font-weight:700;}
+
+  /* SECTION C — PART TASK (sentence transform) */
+  .transform-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:10px;}
+  .transform-q{font-size:.87rem;line-height:1.6;margin-bottom:4px;}
+  .transform-key{background:var(--surface2);border:1px solid var(--border);border-radius:5px;display:inline-block;padding:2px 10px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--warn);font-weight:700;margin:6px 0;}
+  .transform-input{background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.82rem;padding:7px 12px;width:100%;outline:none;transition:border-color .15s;margin-top:4px;}
+  .transform-input:focus{border-color:var(--accent);}
+  .transform-input.ok{border-color:var(--accent3);background:var(--correct-bg);color:var(--accent3);}
+  .transform-input.no{border-color:var(--accent2);background:var(--wrong-bg);color:var(--accent2);}
+
+  /* BUTTONS & SCORE */
+  .score-bar{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 15px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:.82rem;flex-wrap:wrap;gap:8px;}
+  .score-val{font-weight:700;color:var(--warn);font-size:1rem;}
+  .submit-btn{background:var(--accent3);color:#000;border:none;border-radius:7px;padding:10px 22px;font-family:'Sora',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer;transition:opacity .15s;margin-top:14px;}
+  .submit-btn:hover{opacity:.85;}
+  .submit-btn:disabled{opacity:.4;cursor:default;}
+  .check-btn{background:var(--accent);color:#000;border:none;border-radius:6px;padding:6px 14px;font-family:'Sora',sans-serif;font-size:.77rem;font-weight:700;cursor:pointer;margin-top:7px;transition:opacity .15s;}
+  .check-btn:hover{opacity:.85;}
+  .check-btn:disabled{opacity:.4;cursor:default;}
+  .reveal{margin-top:7px;font-size:.77rem;display:none;line-height:1.5;}
+  .reveal.show{display:block;}
+  .reveal .ans{color:var(--accent3);font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .reveal .why{color:var(--muted);}
+
+  /* RESULTS */
+  .results-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;display:none;}
+  .results-panel.show{display:block;}
+  .results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+  .res-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;}
+  .res-num{font-size:1.5rem;font-weight:800;color:var(--accent);}
+  .res-lbl{font-size:.68rem;color:var(--muted);margin-top:3px;}
+  .res-message{font-size:.85rem;line-height:1.6;color:var(--muted);padding:12px;background:var(--surface2);border-radius:8px;margin-top:10px;}
+  .res-message b{color:var(--text);}
+
+  .section-sep{height:1px;background:var(--border);margin:20px 0;}
+  .note-chip{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--warn);margin:2px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <h1>NMT Format — Use of English</h1>
+    <p>Lesson 1 · Tenses Practice · Parts A, B & C</p>
+  </div>
+  <div class="timer-box">
+    <span class="timer-label">Time</span>
+    <span class="timer-val" id="timer">15:00</span>
+    <button class="timer-btn" id="timer-btn" onclick="toggleTimer()">Start</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('parta',this)">Part A — MCQ</div>
+  <div class="tab" onclick="switchTab('partb',this)">Part B — Open Cloze</div>
+  <div class="tab" onclick="switchTab('partc',this)">Part C — Transform</div>
+  <div class="tab" onclick="switchTab('results',this)">Results</div>
+</div>
+
+<!-- ============ PART A — MCQ CLOZE ============ -->
+<div id="tab-parta" class="main">
+
+  <div class="exam-header">
+    <span class="exam-badge">Part A</span>
+    <div>
+      <div class="exam-title">Multiple-Choice Cloze</div>
+      <div class="exam-instr">Read the text. Choose the best option (A, B, C or D) for each gap. Only ONE answer is correct for each question.</div>
+    </div>
+  </div>
+
+  <div class="text-block">
+    <div class="text-title">Reading Passage</div>
+    Maya <span class="gap-num">1</span> in a small coastal town all her life, but last summer everything changed. One morning, she <span class="gap-num">2</span> a letter from a university in Lviv — she <span class="gap-num">3</span> for a scholarship two months earlier and <span class="gap-num">4</span> forgotten about it. The letter said she <span class="gap-num">5</span> a full grant. Maya <span class="gap-num">6</span> the news to her parents, who <span class="gap-num">7</span> breakfast when she ran into the kitchen. Her father looked up and said, "We <span class="gap-num">8</span> this moment since the day you started school." Next autumn, Maya <span class="gap-num">9</span> her new life in the city — she <span class="gap-num">10</span> a room already and the term <span class="gap-num">11</span> in September.
+  </div>
+
+  <div class="score-bar"><span style="color:var(--muted)">Score</span><span class="score-val" id="pa-score">0 / 11</span></div>
+
+  <div id="pa-container"></div>
+</div>
+
+<!-- ============ PART B — OPEN CLOZE ============ -->
+<div id="tab-partb" class="main" style="display:none;">
+
+  <div class="exam-header">
+    <span class="exam-badge b">Part B</span>
+    <div>
+      <div class="exam-title">Open Cloze</div>
+      <div class="exam-instr">Read the text. Fill in each gap with ONE word only. Use the correct tense form. The first letter is sometimes given as a clue.</div>
+    </div>
+  </div>
+
+  <div class="cloze-text" id="cloze-text">
+    <!-- built by JS -->
+  </div>
+
+  <div id="cloze-answers-area">
+    <div class="score-bar"><span style="color:var(--muted)">Score</span><span class="score-val" id="pb-score">0 / 8</span></div>
+    <button class="submit-btn" id="pb-submit" onclick="checkCloze()">Check All Answers</button>
+  </div>
+</div>
+
+<!-- ============ PART C — SENTENCE TRANSFORMATION ============ -->
+<div id="tab-partc" class="main" style="display:none;">
+
+  <div class="exam-header">
+    <span class="exam-badge c">Part C</span>
+    <div>
+      <div class="exam-title">Key Word Transformation</div>
+      <div class="exam-instr">Complete the second sentence so it has a similar meaning to the first, using the key word given. Do not change the key word. Use 2–5 words including the key word.</div>
+    </div>
+  </div>
+
+  <div class="score-bar"><span style="color:var(--muted)">Score</span><span class="score-val" id="pc-score">0 / 6</span></div>
+
+  <div id="transform-container"></div>
+</div>
+
+<!-- ============ RESULTS ============ -->
+<div id="tab-results" class="main" style="display:none;">
+  <h2 style="margin-bottom:6px;">Your Results</h2>
+  <p style="font-size:.8rem;color:var(--muted);margin-bottom:16px;">Complete all three parts to see your full score and teacher feedback.</p>
+
+  <div class="results-grid">
+    <div class="res-card"><div class="res-num" id="r-a">—</div><div class="res-lbl">Part A / 11</div></div>
+    <div class="res-card"><div class="res-num" id="r-b">—</div><div class="res-lbl">Part B / 8</div></div>
+    <div class="res-card"><div class="res-num" id="r-c">—</div><div class="res-lbl">Part C / 6</div></div>
+  </div>
+  <div class="res-card" style="margin-bottom:14px;background:var(--surface2);">
+    <div class="res-num" id="r-total">—</div>
+    <div class="res-lbl">Total / 25</div>
+  </div>
+
+  <div class="res-message" id="r-message">Answer all questions in Parts A, B and C to see your feedback here.</div>
+
+  <div class="section-sep"></div>
+
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:.82rem;color:var(--muted);line-height:1.8;">
+    <b style="color:var(--warn)">Teacher key — common error patterns:</b><br>
+    ✦ Part A gap 1 wrong → Present Perfect + "all her life" not consolidated.<br>
+    ✦ Part A gaps 2, 3 wrong → Past Simple / Past Perfect confusion.<br>
+    ✦ Part A gaps 9, 11 wrong → future forms (going to / Present Continuous) not secure.<br>
+    ✦ Part B wrong → open cloze requires production, not recognition — needs more drilling.<br>
+    ✦ Part C wrong → sentence transformation is a high NMT skill; practise daily from Lesson 2.
+  </div>
+
+  <button class="submit-btn" style="background:var(--accent2);margin-top:14px;" onclick="location.reload()">↺ Reset & Try Again</button>
+</div>
+
+<script>
+// ======== TIMER ========
+let timerSecs = 900, timerOn = false, timerInterval;
+function toggleTimer(){
+  const btn = document.getElementById('timer-btn');
+  if(!timerOn){
+    timerOn=true; btn.textContent='Pause'; btn.classList.remove('red');
+    timerInterval=setInterval(()=>{
+      if(timerSecs<=0){clearInterval(timerInterval);return;}
+      timerSecs--;
+      const m=Math.floor(timerSecs/60).toString().padStart(2,'0');
+      const s=(timerSecs%60).toString().padStart(2,'0');
+      document.getElementById('timer').textContent=m+':'+s;
+      if(timerSecs<=60) document.getElementById('timer').style.color='var(--accent2)';
+    },1000);
+  } else {
+    timerOn=false; btn.textContent='Resume'; btn.classList.add('red');
+    clearInterval(timerInterval);
+  }
+}
+
+// ======== TABS ========
+const tabSections = ['parta','partb','partc','results'];
+function switchTab(id, el){
+  tabSections.forEach(t=>{ document.getElementById('tab-'+t).style.display='none'; });
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).style.display='block';
+  el.classList.add('active');
+  updateResults();
+}
+
+// ======== PART A DATA ========
+const paData = [
+  { num:1, stem:'Maya ___ in a small coastal town all her life...', correct:'A',
+    opts:['A) has lived','B) lived','C) is living','D) had lived'],
+    why:'"all her life" = duration up to now → Present Perfect. "Lived" (Past Simple) would need a finished time.' },
+  { num:2, stem:'One morning, she ___ a letter from a university in Lviv.', correct:'C',
+    opts:['A) has received','B) receives','C) received','D) was received'],
+    why:'"One morning" = specific past time → Past Simple. Present Perfect is impossible with definite past time markers.' },
+  { num:3, stem:'She ___ for a scholarship two months earlier...', correct:'D',
+    opts:['A) has applied','B) applied','C) applies','D) had applied'],
+    why:'Action completed BEFORE another past event (receiving the letter) → Past Perfect (had + past participle).' },
+  { num:4, stem:'...and ___ forgotten about it.', correct:'B',
+    opts:['A) has','B) had','C) have','D) was'],
+    why:'Still in the past narrative — the forgetting happened before she received the letter → Past Perfect: had forgotten.' },
+  { num:5, stem:'The letter said she ___ a full grant.', correct:'A',
+    opts:['A) had won','B) has won','C) won','D) wins'],
+    why:'Reported speech — the winning was before the saying → Past Perfect in reported speech.' },
+  { num:6, stem:'Maya ___ the news to her parents...', correct:'C',
+    opts:['A) has announced','B) announces','C) announced','D) had announced'],
+    why:'Narrative past event in sequence → Past Simple. No reason for Past Perfect here (it wasn\'t before another past event).' },
+  { num:7, stem:'...who ___ breakfast when she ran into the kitchen.', correct:'B',
+    opts:['A) have had','B) were having','C) had','D) have been having'],
+    why:'Ongoing background action interrupted by another past action → Past Continuous.' },
+  { num:8, stem:'"We ___ this moment since the day you started school."', correct:'D',
+    opts:['A) wait for','B) waited for','C) are waiting for','D) have been waiting for'],
+    why:'"Since" + duration up to NOW, spoken in present → Present Perfect Continuous (emphasis on the duration).' },
+  { num:9, stem:'Next autumn, Maya ___ her new life in the city...', correct:'B',
+    opts:['A) will start','B) is going to start','C) starts','D) has started'],
+    why:'It\'s a decided plan ("going to start") — she has arranged it. "Will" is for spontaneous decisions.' },
+  { num:10, stem:'...she ___ a room already...', correct:'A',
+    opts:['A) has booked','B) booked','C) books','D) had booked'],
+    why:'"Already" + result relevant to now → Present Perfect.' },
+  { num:11, stem:'...and the term ___ in September.', correct:'C',
+    opts:['A) is going to begin','B) will begin','C) begins','D) has begun'],
+    why:'Fixed scheduled event (university timetable) → Present Simple for future timetable.' },
+];
+
+let paScore=0, paDone=new Array(11).fill(false);
+
+function buildPartA(){
+  const c=document.getElementById('pa-container');
+  paData.forEach((q,i)=>{
+    let optsHtml = q.opts.map((o,j)=>{
+      const letter=o[0];
+      return `<button class="opt" id="pa-opt-${i}-${j}" onclick="checkPA(${i},${j},'${letter}','${q.correct}')">
+        <span class="letter">${letter}</span>${o.slice(3)}
+      </button>`;
+    }).join('');
+    c.innerHTML+=`<div class="q-block" id="pa-q-${i}">
+      <div class="q-num">Question ${q.num}</div>
+      <div class="q-text">${q.stem}</div>
+      <div class="options">${optsHtml}</div>
+      <div class="q-feedback" id="pa-fb-${i}"></div>
+    </div>`;
+  });
+}
+
+function checkPA(qi,oi,letter,correct){
+  if(paDone[qi])return;
+  paDone[qi]=true;
+  const allOpts=document.querySelectorAll(`[id^="pa-opt-${qi}-"]`);
+  allOpts.forEach(b=>{
+    b.disabled=true;
+    const l=b.querySelector('.letter').textContent;
+    if(l===correct) b.classList.add('correct');
+  });
+  const clicked=document.getElementById(`pa-opt-${qi}-${oi}`);
+  if(letter===correct){ paScore++; }
+  else { clicked.classList.add('wrong'); }
+  document.getElementById('pa-score').textContent=paScore+' / 11';
+  const fb=document.getElementById(`pa-fb-${qi}`);
+  fb.innerHTML=`<span class="rule">${paData[qi].why}</span>`;
+  fb.classList.add('show');
+  updateResults();
+}
+
+// ======== PART B — OPEN CLOZE ========
+const clozeData = [
+  // [before, answer, after, hint, firstLetter]
+  ['Tom is a scientist. He ', ['has worked','has been working'], ' on renewable energy for the past eight years — ', 'for + duration up to now → Present Perfect', 'h'],
+  ['he ', ['started'], ' the project back in 2016 after graduating from university. ', '"in 2016" / "back in" = past finished time → Past Simple', 's'],
+  ['By the time he published his first paper, he ', ['had spent'], ' three years collecting data. ', 'before another past event → Past Perfect', 'h'],
+  ['These days he ', ['is travelling'], " / frequently travels around Europe for conferences — he ", 'temporary ongoing now → Present Continuous', 'i'],
+  ['', ['has visited'], ' over twenty countries ', '"twenty countries" + no past time → Present Perfect experience', 'h'],
+  ['since he ', ['began'], ' his research. ', '"since" + start point → Past Simple after "since"', 'b'],
+  ['Next week he ', ['is flying'], ' to Oslo — he already has his flights booked. ', 'fixed arrangement with ticket → Present Continuous for future', 'i'],
+  ['He thinks the conference ', ['will be'], ' very productive this year. ', 'personal opinion/prediction → will', 'w'],
+];
+
+let pbScore=0, pbDone=false;
+
+function buildCloze(){
+  const el=document.getElementById('cloze-text');
+  el.innerHTML='<div class="text-title">Reading Passage — Tom\'s Story</div>';
+  let html='';
+  clozeData.forEach((item,i)=>{
+    html+=item[0];
+    html+=`<sup class="cloze-num">${i+1}</sup><input class="cloze-input" id="ci${i}" placeholder="${item[4] || '_'}______" autocomplete="off"/>`;
+    html+=`<span class="cloze-reveal" id="cr${i}"><span class="ans"> ✓${item[1][0]}</span></span>`;
+    html+=item[2];
+  });
+  el.innerHTML+='<span>'+html+'</span>';
+}
+
+function norm(s){ return s.toLowerCase().trim().replace(/\s+/g,' ').replace(/['']/g,"'"); }
+
+function checkCloze(){
+  if(pbDone)return;
+  pbDone=true;
+  document.getElementById('pb-submit').disabled=true;
+  clozeData.forEach((item,i)=>{
+    const inp=document.getElementById('ci'+i);
+    const v=norm(inp.value);
+    const ok=item[1].some(a=>norm(a)===v||v.includes(norm(a).split(' ').slice(-1)[0]));
+    inp.disabled=true;
+    inp.classList.add(ok?'ok':'no');
+    if(ok) pbScore++;
+    document.getElementById('cr'+i).classList.add('show');
+  });
+  document.getElementById('pb-score').textContent=pbScore+' / 8';
+  updateResults();
+}
+
+// ======== PART C — TRANSFORMATION ========
+const transData=[
+  { q1:"I last spoke to her three years ago.", key:"SINCE", q2:"I _____ three years.", ans:["haven't spoken to her for","have not spoken to her for"], hint:"haven't spoken to her for"},
+  { q1:"The match started before we arrived at the stadium.", key:"ALREADY", q2:"When we arrived, the match _____.", ans:["had already started","had already begun"], hint:"had already started"},
+  { q1:"She decided to become a doctor. It's her plan.", key:"GOING", q2:"She _____ a doctor.", ans:["is going to become","is going to be"], hint:"is going to become"},
+  { q1:"This is the first time I've eaten Georgian food.", key:"NEVER", q2:"I _____ Georgian food before.", ans:["have never eaten","'ve never eaten"], hint:"have never eaten"},
+  { q1:"My parents were cooking when I called.", key:"WHILE", q2:"I called _____ cooking.", ans:["while my parents were","while they were"], hint:"while my parents were"},
+  { q1:"We have a reservation at the restaurant for 8 pm.", key:"MEETING", q2:"We _____ at 8 pm at the restaurant.", ans:["are meeting","'re meeting"], hint:"are meeting"},
+];
+
+let pcScore=0, pcDone=new Array(6).fill(false);
+
+function buildTrans(){
+  const c=document.getElementById('transform-container');
+  transData.forEach((item,i)=>{
+    c.innerHTML+=`<div class="transform-item">
+      <div class="q-num">Question ${i+1}</div>
+      <div class="transform-q"><b>Original:</b> ${item.q1}</div>
+      <div style="margin:6px 0;font-size:.82rem;color:var(--muted)">Key word: <span class="note-chip">${item.key}</span></div>
+      <div class="transform-q"><b>Complete:</b> ${item.q2.replace('_____','<span style="color:var(--accent4)">_____</span>')}</div>
+      <input class="transform-input" id="ti${i}" placeholder="type 2–5 words including the key word…" autocomplete="off"/>
+      <button class="check-btn" id="tb${i}" onclick="checkTrans(${i})">Check</button>
+      <div class="reveal" id="tr${i}"></div>
+    </div>`;
+  });
+}
+
+function checkTrans(i){
+  if(pcDone[i])return;
+  pcDone[i]=true;
+  const inp=document.getElementById('ti'+i);
+  const v=norm(inp.value);
+  const ok=transData[i].ans.some(a=>v.includes(norm(a))||norm(a).includes(v)&&v.length>4);
+  document.getElementById('tb'+i).disabled=true;
+  inp.disabled=true;
+  inp.classList.add(ok?'ok':'no');
+  if(ok) pcScore++;
+  document.getElementById('pc-score').textContent=pcScore+' / 6';
+  const rev=document.getElementById('tr'+i);
+  rev.innerHTML=`<span class="ans">✓ …${transData[i].hint}…</span><br><span class="why">${transData[i].ans[0]} — check: does the meaning match the original?</span>`;
+  rev.classList.add('show');
+  updateResults();
+}
+
+// ======== RESULTS ========
+function updateResults(){
+  const aAnswered=paDone.filter(Boolean).length;
+  const bDone=pbDone;
+  const cAnswered=pcDone.filter(Boolean).length;
+  if(aAnswered>0) document.getElementById('r-a').textContent=paScore;
+  if(bDone) document.getElementById('r-b').textContent=pbScore;
+  if(cAnswered>0) document.getElementById('r-c').textContent=pcScore;
+  const allDone=aAnswered===11&&bDone&&cAnswered===6;
+  if(allDone){
+    const total=paScore+pbScore+pcScore;
+    document.getElementById('r-total').textContent=total;
+    const pct=Math.round((total/25)*100);
+    let msg='';
+    if(pct>=84) msg=`<b>Excellent — ${total}/25 (${pct}%).</b> Tense control is strong. Focus on transformation tasks in Lesson 2 for the remaining points.`;
+    else if(pct>=68) msg=`<b>Good — ${total}/25 (${pct}%).</b> Core tenses are in place. Review errors above — mostly signal-word confusion and Past Perfect use.`;
+    else if(pct>=52) msg=`<b>Developing — ${total}/25 (${pct}%).</b> The signal-word system needs more drilling. Revisit the Grammar tab and redo Part A before Lesson 2.`;
+    else msg=`<b>Needs work — ${total}/25 (${pct}%).</b> Fundamental tense rules need consolidation. Recommend re-doing warm-up and gap-fill from the main lesson tool first.`;
+    document.getElementById('r-message').innerHTML=msg;
+  }
+}
+
+// ======== INIT ========
+buildPartA();
+buildCloze();
+buildTrans();
+</script>
+</body>
+</html>
